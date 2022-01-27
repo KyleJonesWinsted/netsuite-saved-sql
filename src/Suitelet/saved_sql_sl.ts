@@ -193,16 +193,26 @@ const createNewSavedSqlPage = (ctx: EntryPoints.Suitelet.onRequestContext): void
     type: ui.FieldType.SELECT,
     source: 'mediaitemfolder',
   });
+  folderSelect.updateDisplayType({ displayType: ui.FieldDisplayType.INLINE });
   folderSelect.updateBreakType({ breakType: ui.FieldBreakType.STARTCOL });
   folderSelect.isMandatory = true;
-  folderSelect.addSelectOption({ value: '', text: '', isSelected: true });
+  folderSelect.addSelectOption({ value: '', text: '' });
   getAllFolders().forEach((folder) => {
     folderSelect.addSelectOption({ value: folder.id, text: folder.name });
   });
+  folderSelect.defaultValue = sqlFileFolder();
   form.addField({ id: IDs.queryTitle, label: 'Query Title', type: ui.FieldType.TEXT }).isMandatory = true;
   form.addField({ id: IDs.sqlQuery, label: 'SQL Query Text', type: ui.FieldType.TEXTAREA }).updateDisplaySize({ height: 10, width: 100 }).isMandatory = true;
   form.addSubmitButton({ label: 'Preview' });
   ctx.response.writePage(form);
+};
+
+const sqlFileFolder = () => {
+  const folderId = <string>runtime.getCurrentScript().getParameter({ name: 'custscript_sql_file_folder' });
+  if (!folderId) {
+    throw error.create({ name: 'MISSING_SQL_FOLDER', message: 'Missing SQL File Folder script parameter' });
+  }
+  return folderId;
 };
 
 const parsePdfTemplateId = (fileText: string): { fileText: string; templateId?: string } => {
