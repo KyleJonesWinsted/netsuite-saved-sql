@@ -1,0 +1,14 @@
+{
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    },
+	"todohighlight.isEnable": true,
+    "todohighlight.include": [
+        "src/**"
+    ],
+    "todohighlight.exclude": [
+        "node_modules/**",
+        ".vscode/**"
+    ]
+}

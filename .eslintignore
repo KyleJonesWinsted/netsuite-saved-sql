@@ -1,0 +1,9 @@
+__tests__
+FileCabinet
+node_modules
+src/netsuite_modules
+
+.eslintrc.js
+.prettierrc.js
+jest.config.js
+webpack.config.js

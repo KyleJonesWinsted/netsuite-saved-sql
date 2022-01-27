@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "christopherwxyz.netsuitesdf",
+    "kylejoneswinsted.openrelatedjsts",
+    "mrmlnc.vscode-duplicate",
+    "geeebe.duplicate",
+    "wayou.vscode-todo-highlight"
+  ]
+}

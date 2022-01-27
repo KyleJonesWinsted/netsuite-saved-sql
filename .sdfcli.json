@@ -1,0 +1,13 @@
+{
+  "projectName": "SDF Project Template",
+  "environments": [
+    {
+      "name": "Sandbox",
+      "authid": "0000000"
+    },
+    {
+      "name": "Production",
+      "authid": "0000000"
+    }
+  ]
+}
