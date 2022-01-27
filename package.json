@@ -2,6 +2,7 @@
   "name": "sdf-project-template",
   "version": "3.0.0",
   "description": "SDF Project Template",
+  "bin": "install.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/BerganKDV/sdf-project-template-v3"
@@ -10,6 +11,7 @@
   "scripts": {
     "clean-filecabinet": "rimraf \"FileCabinet/SuiteScripts/BerganKDV/!(netsuite_modules)/**\"",
     "webpack": "webpack --mode production --watch",
+    "build": "webpack --mode production",
     "test": "jest"
   },
   "dependencies": {
