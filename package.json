@@ -6,6 +6,11 @@
     "netsuite-saved-sql": "install.js"
   },
   "author": "Kyle Jones",
+  "scripts": {
+    "clean-filecabinet": "rimraf \"FileCabinet/SuiteScripts/BerganKDV/!(netsuite_modules)/**\"",
+    "webpack": "webpack --mode production --watch",
+    "test": "jest"
+  },
   "dependencies": {
     "moment": "2.29.1",
     "ts-polyfill": "3.8.2"
