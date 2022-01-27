@@ -11,9 +11,11 @@ const readline = require('readline').createInterface({
 async function main() {
   let exitCode = 0;
   try {
+    const folderId = await getSqlFolderId();
     await cloneRepo('https://github.com/KyleJonesWinsted/netsuite-saved-sql');
     await buildRepo();
     await installFiles();
+    await modifyScriptObject(folderId);
     await createDeployXml();
     console.log(deploymentInstructions);
   } catch (err) {
@@ -22,6 +24,26 @@ async function main() {
   }
   await cleanup();
   process.exit(exitCode);
+}
+
+async function getSqlFolderId() {
+  console.log('Getting SQL file folder ID...');
+  return new Promise((resolve) => {
+    readline.question('\nEnter the internal ID of a folder to save SQL queries to: ', (answer) => {
+      resolve(answer.trim());
+    });
+  })
+}
+
+async function modifyScriptObject(folderId) {
+  console.log('Modifying script object...');
+  const filePath = path.join('Objects', 'Scripts', 'Suitelet', 'customscript_saved_sql_sl.xml');
+  const fileBuffer = await fs.readFile(filePath);
+  const fileContent = fileBuffer.toString().replace(
+      /<custscript_sql_file_folder>.*<\/custscript_sql_file_folder>/, 
+      `<custscript_sql_file_folder>${folderId}</custscript_sql_file_folder>`
+  );
+  await fs.writeFile(filePath, fileContent);
 }
 
 async function createDeployXml() {
