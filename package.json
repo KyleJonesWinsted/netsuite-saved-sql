@@ -2,7 +2,9 @@
   "name": "netsuite-saved-sql",
   "version": "1.0.0",
   "description": "Netsuite Saved SQL",
-  "bin": "install.js",
+  "bin": {
+    "netsuite-saved-sql": "install.js"
+  },
   "author": "Kyle Jones",
   "scripts": {
     "clean-filecabinet": "rimraf \"FileCabinet/SuiteScripts/BerganKDV/!(netsuite_modules)/**\"",
