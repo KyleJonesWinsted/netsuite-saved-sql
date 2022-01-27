@@ -1,13 +1,9 @@
 {
-  "name": "sdf-project-template",
-  "version": "3.0.0",
-  "description": "SDF Project Template",
+  "name": "netsuite-saved-sql",
+  "version": "1.0.0",
+  "description": "Netsuite Saved SQL",
   "bin": "install.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/BerganKDV/sdf-project-template-v3"
-  },
-  "author": "BerganKDV <erpsupport@bergankdv.com> (https://www.bergankdv.com/)",
+  "author": "Kyle Jones",
   "scripts": {
     "clean-filecabinet": "rimraf \"FileCabinet/SuiteScripts/BerganKDV/!(netsuite_modules)/**\"",
     "webpack": "webpack --mode production --watch",
