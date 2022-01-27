@@ -29,12 +29,11 @@ async function createDeployXml() {
   const deployContent = `\
 <deploy>
   <files>
-    <path>~/FileCabinet/SuiteScripts/BerganKDV/Client/ns_client_docs_cl.js</path>
-    <path>~/FileCabinet/SuiteScripts/BerganKDV/Static/ns-client-docs.html</path>
-    <path>~/FileCabinet/SuiteScripts/BerganKDV/Suitelet/ns_client_docs.js</path>
+    <path>~/FileCabinet/SuiteScripts/BerganKDV/Client/saved_sql_cl.js</path>
+    <path>~/FileCabinet/SuiteScripts/BerganKDV/Suitelet/saved_sql_sl.js</path>
   </files>
   <objects>
-    <path>~/Objects/Suitelet/customscript_ns_client_docs.xml</path>
+    <path>~/Objects/Scripts/Suitelet/customscript_saved_sql_sl.xml</path>
   </objects>
 </deploy>
     `;
@@ -46,8 +45,8 @@ async function installFiles() {
   const fileCabinetPath = 'FileCabinet/SuiteScripts/BerganKDV';
   const suitelet = moveFile(`${fileCabinetPath}/Suitelet/saved_sql_sl.js`);
   const client = moveFile(`${fileCabinetPath}/Client/saved_sql_cl.js`);
-  const scriptObj = moveFile('Objects/Suitelet/customscript_saved_sql_sl.xml');
-  await Promise.all([frontEnd, suitelet, client, scriptObj]);
+  const scriptObj = moveFile('Objects/Scripts/Suitelet/customscript_saved_sql_sl.xml');
+  await Promise.all([suitelet, client, scriptObj]);
 }
 
 async function moveFile(outputPath) {
@@ -66,9 +65,9 @@ async function cloneRepo(url) {
   await runCommand(`git clone ${url}`);
 }
 
-async function buildRepo(folder) {
+async function buildRepo() {
   console.log(`Building scripts...`);
-  const folderPath = path.join('netsuite-saved-sql', folder);
+  const folderPath = 'netsuite-saved-sql';
   await runCommandAtPath('npm install', folderPath);
   await runCommandAtPath('npm run build', folderPath);
 }
