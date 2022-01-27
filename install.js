@@ -9,6 +9,7 @@ const readline = require('readline').createInterface({
 });
 
 async function main() {
+  console.log('Starting...');
   let exitCode = 0;
   try {
     const folderId = await getSqlFolderId();
