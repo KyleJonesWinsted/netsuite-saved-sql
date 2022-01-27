@@ -5,7 +5,7 @@
   "bin": {
     "netsuite-saved-sql": "install.js"
   },
-  "author": "Kyle Jones",
+  "author": "Kyle Jones <kylejoneswinsted@gmail.com>",
   "scripts": {
     "clean-filecabinet": "rimraf \"FileCabinet/SuiteScripts/BerganKDV/!(netsuite_modules)/**\"",
     "webpack": "webpack --mode production",
