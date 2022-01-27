@@ -8,7 +8,7 @@
   "author": "Kyle Jones",
   "scripts": {
     "clean-filecabinet": "rimraf \"FileCabinet/SuiteScripts/BerganKDV/!(netsuite_modules)/**\"",
-    "webpack": "webpack --mode production --watch",
+    "webpack": "webpack --mode production",
     "test": "jest"
   },
   "dependencies": {

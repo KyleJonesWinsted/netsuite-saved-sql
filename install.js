@@ -92,7 +92,7 @@ async function buildRepo() {
   console.log(`Building scripts...`);
   const folderPath = 'netsuite-saved-sql';
   await runCommandAtPath('npm install', folderPath);
-  await runCommandAtPath('npm run build', folderPath);
+  await runCommandAtPath('npm run webpack', folderPath);
 }
 
 async function runCommandAtPath(command, path) {
