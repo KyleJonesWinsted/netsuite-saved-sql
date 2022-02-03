@@ -202,8 +202,9 @@ const createNewSavedSqlPage = (ctx: EntryPoints.Suitelet.onRequestContext): void
   });
   folderSelect.defaultValue = sqlFileFolder();
   form.addField({ id: IDs.queryTitle, label: 'Query Title', type: ui.FieldType.TEXT }).isMandatory = true;
-  form.addField({ id: IDs.sqlQuery, label: 'SQL Query Text', type: ui.FieldType.TEXTAREA }).updateDisplaySize({ height: 10, width: 100 }).isMandatory = true;
+  form.addField({ id: IDs.sqlQuery, label: 'SQL Query Text', type: ui.FieldType.LONGTEXT }).updateDisplaySize({ height: 10, width: 100 }).isMandatory = true;
   form.addSubmitButton({ label: 'Preview' });
+  form.clientScriptModulePath = '../Client/saved_sql_cl.js';
   ctx.response.writePage(form);
 };
 

@@ -1,5 +1,6 @@
 /**
- * @NApiVersion 2.x
+ * @NApiVersion 2.1
+ * @NScriptType ClientScript
  * @NModuleScope SameAccount
  * author: Kyle Jones
  * Date: 05/27/2021
@@ -28,20 +29,47 @@ interface IRequestParams {
   [x: string]: string | undefined;
 }
 
+const pageInit = () => {
+  addScrollListener();
+  addEntryFieldStyle();
+};
+
+const addEntryFieldStyle = () => {
+  const entryField = document.getElementById('custpage_sql_query') as HTMLTextAreaElement;
+  if (!entryField) return;
+  entryField.style.fontFamily = 'monospace';
+  entryField.onkeydown = (e) => {
+    console.log(e.key);
+    if (e.key == 'Tab') {
+      e.preventDefault();
+      const start = entryField.selectionStart;
+      const end = entryField.selectionEnd;
+
+      // set textarea value to: text before caret + tab + text after caret
+      entryField.value = entryField.value.substring(0, start) + '\t' + entryField.value.substring(end);
+
+      // put caret at right position again
+      entryField.selectionStart = entryField.selectionEnd = start + 1;
+    }
+  };
+};
+
 const exportToCsv = (): void => {
   const randomFileNum = Math.floor(Math.random() * 900000) + 100000;
   csv(SUBLIST_ID, `SQLExport${randomFileNum}.csv`);
 };
 
-window.addEventListener('scroll', () => {
-  const pageHeaderBottom = document.getElementById('div__header')?.getBoundingClientRect().bottom;
-  const sublistLayerTop = document.getElementById(SUBLIST_ID + '_layer')?.getBoundingClientRect().top ?? 0;
-  const sublistHeader = document.getElementById(SUBLIST_ID + 'header');
-  if (pageHeaderBottom && sublistHeader) {
-    const translateAmount = pageHeaderBottom - sublistLayerTop - 47;
-    sublistHeader.style.transform = `translateY(${translateAmount > 0 ? translateAmount : 0}px)`;
-  }
-});
+const addScrollListener = () => {
+  window.addEventListener('scroll', () => {
+    const pageHeaderBottom = document.getElementById('div__header')?.getBoundingClientRect().bottom;
+    const sublistLayerTop = document.getElementById(SUBLIST_ID + '_layer')?.getBoundingClientRect().top ?? 0;
+    const sublistHeader = document.getElementById(SUBLIST_ID + 'header');
+    if (pageHeaderBottom && sublistHeader) {
+      const translateAmount = pageHeaderBottom - sublistLayerTop - 47;
+      sublistHeader.style.transform = `translateY(${translateAmount > 0 ? translateAmount : 0}px)`;
+    }
+  });
+};
 
 const printPdf = (): void => {
   const currentUrl = new URL(window.location.href);
@@ -92,5 +120,7 @@ const applyFilters = (fieldIds: string[]): void => {
   window.onbeforeunload = null;
   window.location.replace(url.toString());
 };
+
+pageInit();
 
 export { applyFilters, exportToCsv, printPdf };
