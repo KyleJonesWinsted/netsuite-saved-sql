@@ -76,7 +76,8 @@ const common = {
   ],
   externals: [
     /^N\//,
-    /netsuite_modules/,
+    'fs',
+    // /netsuite_modules/,
   ],
   stats: {
     preset: 'minimal',

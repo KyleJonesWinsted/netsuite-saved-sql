@@ -10,7 +10,7 @@
 import * as currentRecord from 'N/currentRecord';
 import * as url from 'N/url';
 
-import * as csvExport from '../netsuite_modules/export-to-csv-excel-btn/index';
+import { csv } from '../netsuite_modules/export-to-csv-excel-btn/index';
 
 const SUBLIST_ID = 'results_sublist';
 
@@ -30,7 +30,7 @@ interface IRequestParams {
 
 const exportToCsv = (): void => {
   const randomFileNum = Math.floor(Math.random() * 900000) + 100000;
-  csvExport.csv(SUBLIST_ID, `SQLExport${randomFileNum}.csv`);
+  csv(SUBLIST_ID, `SQLExport${randomFileNum}.csv`);
 };
 
 window.addEventListener('scroll', () => {
