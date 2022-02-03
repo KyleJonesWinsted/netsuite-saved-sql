@@ -3,15 +3,13 @@
 const exec = require('child_process').exec;
 const fs = require('fs/promises');
 const path = require('path');
-const readline = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+const rd = require('readline');
 
 async function main() {
   console.log('Starting...');
   let exitCode = 0;
   try {
+    checkNodeVersion();
     const folderId = await getSqlFolderId();
     await cloneRepo('https://github.com/KyleJonesWinsted/netsuite-saved-sql');
     await buildRepo();
@@ -27,10 +25,25 @@ async function main() {
   process.exit(exitCode);
 }
 
+function checkNodeVersion() {
+  console.log('Checking Node version...');
+  const minimumMajorVersion = 16;
+  const minimumMinorVersion = 13;
+  const [_, majorVersion, minorVersion] = /^(\d+)\.(\d+)/.exec(process.versions.node);
+  if (+majorVersion > minimumMajorVersion) return;
+  if (+majorVersion >= minimumMajorVersion && +minorVersion >= minimumMinorVersion) return;
+  throw `Node ${minimumMajorVersion}.${minimumMinorVersion}.0 or newer is required, please upgrade. Your version is ${process.versions.node}`;
+}
+
 async function getSqlFolderId() {
   console.log('Getting SQL file folder ID...');
+  const readline = rd.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
   return new Promise((resolve) => {
     readline.question('\nEnter the internal ID of a folder to save SQL queries to: ', (answer) => {
+      readline.close();
       resolve(answer.trim());
     });
   })
