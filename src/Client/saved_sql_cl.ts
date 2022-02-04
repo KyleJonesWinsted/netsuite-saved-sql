@@ -38,20 +38,17 @@ const addEntryFieldStyle = () => {
   const entryField = document.getElementById('custpage_sql_query') as HTMLTextAreaElement;
   if (!entryField) return;
   entryField.style.fontFamily = 'monospace';
-  entryField.onkeydown = (e) => {
-    console.log(e.key);
-    if (e.key == 'Tab') {
-      e.preventDefault();
-      const start = entryField.selectionStart;
-      const end = entryField.selectionEnd;
+  entryField.onkeydown = (e) => handleTabKey(e, entryField);
+};
 
-      // set textarea value to: text before caret + tab + text after caret
-      entryField.value = entryField.value.substring(0, start) + '\t' + entryField.value.substring(end);
-
-      // put caret at right position again
-      entryField.selectionStart = entryField.selectionEnd = start + 1;
-    }
-  };
+const handleTabKey = (e: KeyboardEvent, entryField: HTMLTextAreaElement) => {
+  if (e.key == 'Tab') {
+    e.preventDefault();
+    const start = entryField.selectionStart;
+    const end = entryField.selectionEnd;
+    entryField.value = entryField.value.substring(0, start) + '\t' + entryField.value.substring(end);
+    entryField.selectionStart = entryField.selectionEnd = start + 1;
+  }
 };
 
 const exportToCsv = (): void => {
