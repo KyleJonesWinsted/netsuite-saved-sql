@@ -20,6 +20,9 @@ const common = {
       'N': 'node_modules/@hitc/netsuite-types/N',
       'N/*': 'node_modules/@hitc/netsuite-types/N/*',
     },
+    fallback: {
+      "fs": false,
+    }
   },
   cache: {
     type: 'memory',
@@ -45,7 +48,7 @@ const common = {
   },
   plugins: [
     new webpack.WatchIgnorePlugin({
-      paths:[
+      paths: [
         /\.js$/,
         /\.d\.ts$/
       ],
@@ -76,9 +79,10 @@ const common = {
   ],
   externals: [
     /^N\//,
-    'fs',
+    // 'fs',
     // /netsuite_modules/,
   ],
+
   stats: {
     preset: 'minimal',
   },
@@ -89,7 +93,7 @@ const client = {
     obj[el.replace(/(\.\/src)|(\.ts)/g, '')] = el;
     return obj;
   }, {}),
-  target: 'es5',
+  target: 'es2019',
   module: {
     rules: [
       {
@@ -101,7 +105,7 @@ const client = {
               parser: {
                 syntax: 'typescript',
               },
-              target: 'es5',
+              target: 'es2019',
             },
           },
         },
