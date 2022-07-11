@@ -254,7 +254,7 @@ const getQueryResults = (parameters: IRequestParams, fileContents: string): IQue
 const createResultsPage = (parameters: IRequestParams, queryResults: IQueryResults, pageTitle: string): ui.Form => {
   const { results, filters, templateId } = queryResults;
   // Create Suitelet Page
-  const form = ui.createForm({ title: pageTitle });
+  const form = ui.createForm({ title: pageTitle ?? 'Query Results' });
   addFilters(form, filters, parameters);
   if (results.length > 0) {
     const columnNames = Object.keys(results[0]);
