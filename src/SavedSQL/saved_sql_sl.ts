@@ -189,17 +189,36 @@ const createNewSavedSqlPage = (): ui.Form => {
     .updateLayoutType({ layoutType: ui.FieldLayoutType.ENDROW })
     .updateDisplaySize({ height: 10, width: 75 }).isMandatory = true;
   form.addSubmitButton({ label: 'Preview' });
-  form.clientScriptModulePath = '../Client/saved_sql_cl.js';
+  form.clientScriptModulePath = './saved_sql_cl.js';
   return form;
 };
 
 const sqlFileFolder = () => {
-  const folderId = <string>runtime.getCurrentScript().getParameter({ name: 'custscript_sql_file_folder' });
+  const folderId = <string>runtime.getCurrentScript().getParameter({ name: 'custscript_sql_file_folder' }) ?? findDefaultFolder();
   if (!folderId) {
     throw error.create({ name: 'MISSING_SQL_FOLDER', message: 'Missing SQL File Folder script parameter' });
   }
   return folderId;
 };
+
+function findDefaultFolder(): number | undefined {
+  const scriptId = runtime.getCurrentScript().id;
+  return query
+    .runSuiteQL({
+      query: /*sql*/ `
+        SELECT sqlfolder.id
+        FROM
+          script
+          JOIN file ON file.id = script.scriptfile
+          JOIN mediaitemfolder AS scriptfolder
+            ON scriptfolder.id = file.folder
+          JOIN mediaitemfolder AS sqlfolder
+            ON sqlfolder.appfolder = scriptfolder.appfolder || ' : Saved Queries'
+        WHERE script.scriptid = '${scriptId}'
+      `,
+    })
+    .asMappedResults<{ id: number }>()[0]?.id;
+}
 
 const parsePdfTemplateId = (fileText: string): { fileText: string; templateId?: string } => {
   const regex = /{% pdftemplate (\S+) %}/;
@@ -251,7 +270,7 @@ const createResultsPage = (parameters: IRequestParams, queryResults: IQueryResul
   if (parameters.tempSqlCacheId) {
     form.addSubmitButton({ label: 'Save' });
   }
-  form.clientScriptModulePath = '../Client/saved_sql_cl.js';
+  form.clientScriptModulePath = './saved_sql_cl.js';
 
   return form;
 };
