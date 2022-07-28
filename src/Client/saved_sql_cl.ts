@@ -25,6 +25,7 @@ enum IDs {
 
 interface IRequestParams {
   sqlFileId?: string;
+  tempSqlCacheId?: string;
   pdfTemplate?: string;
   [x: string]: string | undefined;
 }

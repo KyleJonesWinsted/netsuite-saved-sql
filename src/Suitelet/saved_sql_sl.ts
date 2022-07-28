@@ -8,10 +8,12 @@
  * Description: Loads a SQL file from the file cabinet, performs text replacement and displays in a list
  */
 
+import * as cache from 'N/cache';
 import * as error from 'N/error';
 import * as file from 'N/file';
 import * as log from 'N/log';
 import * as query from 'N/query';
+import * as redirect from 'N/redirect';
 import * as render from 'N/render';
 import * as runtime from 'N/runtime';
 import { EntryPoints } from 'N/types';
@@ -20,16 +22,10 @@ import * as ui from 'N/ui/serverWidget';
 import * as url from 'N/url';
 
 enum IDs {
-  selectFolder = 'custpage_select_folder',
   sqlQuery = 'custpage_sql_query',
   queryTitle = 'custpage_query_title',
   saved = 'custpage_saved_query',
   pdfTemplate = 'custpage_pdf_template',
-}
-
-interface IFolder {
-  id: string;
-  name: string;
 }
 
 interface IColumnTypes {
@@ -38,6 +34,7 @@ interface IColumnTypes {
 
 interface IRequestParams {
   sqlFileId?: string;
+  tempSqlCacheId?: string;
   pdfTemplate?: string;
   [x: string]: string | undefined;
 }
@@ -82,21 +79,43 @@ const onRequest: EntryPoints.Suitelet.onRequest = (ctx: EntryPoints.Suitelet.onR
 const handleGet = (ctx: EntryPoints.Suitelet.onRequestContext): void => {
   // Get parameters from URL and script deployment
   const parameters: IRequestParams = getParameters(ctx);
+  const sqlContent = loadSqlContents(parameters);
 
-  if (parameters.sqlFileId) {
+  if (sqlContent) {
     // Get SQL file
-    const { fileContents, fileDescription } = getSqlFileContents(parameters.sqlFileId);
-    const queryResults = getQueryResults(parameters, fileContents);
+    const queryResults = getQueryResults(parameters, sqlContent.queryText);
     if (parameters.pdfTemplate) {
       generatePdf(ctx, queryResults, parameters);
     } else {
-      const form = createResultsPage(parameters, queryResults, fileDescription);
+      const form = createResultsPage(parameters, queryResults, sqlContent.queryTitle);
       ctx.response.writePage(form);
     }
   } else {
-    createNewSavedSqlPage(ctx);
+    const form = createNewSavedSqlPage();
+    ctx.response.writePage(form);
   }
 };
+
+function loadSqlContents(params: IRequestParams): { queryText: string; queryTitle: string } | undefined {
+  if (params.sqlFileId) {
+    const sqlFile = getSqlFileContents(params.sqlFileId);
+    return { queryText: sqlFile.fileContents, queryTitle: sqlFile.fileDescription };
+  }
+  if (params.tempSqlCacheId) {
+    return getSqlCacheContents(params.tempSqlCacheId);
+  }
+  return;
+}
+
+function getSqlCacheContents(cacheId: string): { queryText: string; queryTitle: string } {
+  const sqlCache = cache.getCache({ name: cacheId, scope: cache.Scope.PUBLIC });
+  const queryText = sqlCache.get({ key: IDs.sqlQuery });
+  const queryTitle = sqlCache.get({ key: IDs.queryTitle });
+  if (!queryText || !queryTitle) {
+    throw error.create({ name: 'MISSING_CACHE', message: `Could not find cache with key ${cacheId}` });
+  }
+  return { queryText, queryTitle };
+}
 
 const generatePdf = (ctx: EntryPoints.Suitelet.onRequestContext, queryResults: IQueryResults, params: IRequestParams): void => {
   if (!queryResults.templateId) return;
@@ -132,80 +151,46 @@ const replaceNullResults = (queryResults: IQueryResults): void => {
 
 const handlePost = (ctx: EntryPoints.Suitelet.onRequestContext): void => {
   const parameters = getParameters(ctx);
-  const queryText = parameters[IDs.sqlQuery];
-  const queryTitle = parameters[IDs.queryTitle];
-  const saveToFolder = parameters[IDs.selectFolder];
-  if (parameters[IDs.saved]) {
-    const newFileId = file
-      .create({
-        fileType: file.Type.PLAINTEXT,
-        name: <string>queryTitle,
-        contents: queryText,
-        folder: +(<string>saveToFolder),
-        description: queryTitle,
-      })
-      .save();
-    const { fileContents, fileDescription } = getSqlFileContents(String(newFileId));
-    const queryResults = getQueryResults(parameters, fileContents);
-    const form = createResultsPage(parameters, queryResults, fileDescription);
-    const newUrl = url.resolveScript({
-      deploymentId: runtime.getCurrentScript().deploymentId,
-      scriptId: runtime.getCurrentScript().id,
-      params: {
-        sqlFileId: newFileId,
-      },
-    });
-    form.addPageInitMessage({
-      type: message.Type.CONFIRMATION,
-      title: 'Saved SQL Query',
-      message: `This query can be run any time using <a href="${newUrl}" target="_blank">this link</a>`,
-    });
+  log.audit('post params', parameters);
+  const sqlContent = loadSqlContents(parameters);
+  if (sqlContent) {
+    const newFileId = saveNewSqlFile(sqlContent);
+    const form = createConfirmationPage(newFileId);
     ctx.response.writePage(form);
   } else {
-    const form = createTempResultsPage(parameters);
-    ctx.response.writePage(form);
+    const cacheId = storeSqlContent(parameters);
+    const suitelet = runtime.getCurrentScript();
+    const redirectParams: IRequestParams = { tempSqlCacheId: cacheId };
+    redirect.toSuitelet({
+      deploymentId: suitelet.deploymentId,
+      scriptId: suitelet.id,
+      parameters: redirectParams,
+    });
   }
 };
 
-const createTempResultsPage = (params: IRequestParams): ui.Form => {
-  const queryText = params[IDs.sqlQuery];
-  const queryTitle = params[IDs.queryTitle];
-  const saveToFolder = params[IDs.selectFolder];
-  const queryResults = getQueryResults(params, <string>queryText);
-  const form = createResultsPage(params, queryResults, <string>queryTitle);
-  form.addField({ id: IDs.sqlQuery, label: 'Query Text', type: ui.FieldType.TEXTAREA }).updateDisplayType({ displayType: ui.FieldDisplayType.HIDDEN }).defaultValue = <string>queryText;
-  form.addField({ id: IDs.queryTitle, label: 'Query Title', type: ui.FieldType.TEXT }).updateDisplayType({ displayType: ui.FieldDisplayType.HIDDEN }).defaultValue = <string>queryTitle;
-  form.addField({ id: IDs.selectFolder, label: 'Save To Folder', type: ui.FieldType.TEXT }).updateDisplayType({ displayType: ui.FieldDisplayType.HIDDEN }).defaultValue = <string>saveToFolder;
-  form.addField({ id: IDs.saved, label: 'Saved', type: ui.FieldType.TEXT }).updateDisplayType({ displayType: ui.FieldDisplayType.HIDDEN }).defaultValue = 'T';
-  form.addSubmitButton({ label: 'Save' });
-  return form;
+const storeSqlContent = (params: IRequestParams): string => {
+  const cacheId = generateUUID();
+  const sqlCache = cache.getCache({ name: cacheId, scope: cache.Scope.PUBLIC });
+  const store = (key: IDs) => sqlCache.put({ key, value: params[key] ?? '' });
+  store(IDs.sqlQuery);
+  store(IDs.queryTitle);
+  return cacheId;
 };
 
-const getAllFolders = (): IFolder[] => {
-  return query.runSuiteQL({ query: `SELECT id, name FROM mediaitemfolder ORDER BY name` }).asMappedResults<IFolder>();
-};
-
-const createNewSavedSqlPage = (ctx: EntryPoints.Suitelet.onRequestContext): void => {
+const createNewSavedSqlPage = (): ui.Form => {
   const form = ui.createForm({ title: 'New Saved SQL' });
-  const folderSelect = form.addField({
-    id: IDs.selectFolder,
-    label: 'Save To Folder',
-    type: ui.FieldType.SELECT,
-    source: 'mediaitemfolder',
-  });
-  folderSelect.updateDisplayType({ displayType: ui.FieldDisplayType.INLINE });
-  folderSelect.updateBreakType({ breakType: ui.FieldBreakType.STARTCOL });
-  folderSelect.isMandatory = true;
-  folderSelect.addSelectOption({ value: '', text: '' });
-  getAllFolders().forEach((folder) => {
-    folderSelect.addSelectOption({ value: folder.id, text: folder.name });
-  });
-  folderSelect.defaultValue = sqlFileFolder();
-  form.addField({ id: IDs.queryTitle, label: 'Query Title', type: ui.FieldType.TEXT }).isMandatory = true;
-  form.addField({ id: IDs.sqlQuery, label: 'SQL Query Text', type: ui.FieldType.LONGTEXT }).updateDisplaySize({ height: 10, width: 100 }).isMandatory = true;
+  form //
+    .addField({ id: IDs.sqlQuery, label: 'SQL Query Text', type: ui.FieldType.LONGTEXT })
+    .updateLayoutType({ layoutType: ui.FieldLayoutType.NORMAL })
+    .updateDisplaySize({ height: 10, width: 100 }).isMandatory = true;
+  form //
+    .addField({ id: IDs.queryTitle, label: 'Query Title', type: ui.FieldType.TEXT })
+    .updateLayoutType({ layoutType: ui.FieldLayoutType.ENDROW })
+    .updateDisplaySize({ height: 10, width: 75 }).isMandatory = true;
   form.addSubmitButton({ label: 'Preview' });
   form.clientScriptModulePath = '../Client/saved_sql_cl.js';
-  ctx.response.writePage(form);
+  return form;
 };
 
 const sqlFileFolder = () => {
@@ -254,7 +239,7 @@ const getQueryResults = (parameters: IRequestParams, fileContents: string): IQue
 const createResultsPage = (parameters: IRequestParams, queryResults: IQueryResults, pageTitle: string): ui.Form => {
   const { results, filters, templateId } = queryResults;
   // Create Suitelet Page
-  const form = ui.createForm({ title: pageTitle ?? 'Query Results' });
+  const form = ui.createForm({ title: pageTitle || 'Query Results' });
   addFilters(form, filters, parameters);
   if (results.length > 0) {
     const columnNames = Object.keys(results[0]);
@@ -262,6 +247,9 @@ const createResultsPage = (parameters: IRequestParams, queryResults: IQueryResul
     const resultsSublist = createResultsSublist(form, columnNames, columnTypes);
     populateSublist(resultsSublist, columnNames, results);
     addPrintButton(form, resultsSublist, templateId);
+  }
+  if (parameters.tempSqlCacheId) {
+    form.addSubmitButton({ label: 'Save' });
   }
   form.clientScriptModulePath = '../Client/saved_sql_cl.js';
 
@@ -489,6 +477,15 @@ const getParameters = (ctx: EntryPoints.Suitelet.onRequestContext): IRequestPara
     parameters = JSON.parse(defaultParams);
   }
   const urlParameters = ctx.request.parameters;
+  const urlSearch: string | undefined = urlParameters.entryformquerystring;
+  if (urlSearch) {
+    urlSearch
+      .split('&')
+      .map((pair: string) => pair.split('='))
+      .forEach(([key, value]) => {
+        urlParameters[key] = value;
+      });
+  }
   urlParameters.script = undefined;
   urlParameters.deploy = undefined;
   urlParameters.whence = undefined;
@@ -496,5 +493,48 @@ const getParameters = (ctx: EntryPoints.Suitelet.onRequestContext): IRequestPara
   parameters = { ...urlParameters, ...parameters };
   return parameters;
 };
+
+function createConfirmationPage(newFileId: number) {
+  const form = createNewSavedSqlPage();
+  const newUrl = url.resolveScript({
+    deploymentId: runtime.getCurrentScript().deploymentId,
+    scriptId: runtime.getCurrentScript().id,
+    params: {
+      sqlFileId: newFileId,
+    },
+  });
+  form.addPageInitMessage({
+    type: message.Type.CONFIRMATION,
+    title: 'Saved SQL Query',
+    message: `Your new query can be run any time using <a href="${newUrl}" target="_blank">this link</a>`,
+  });
+  return form;
+}
+
+function saveNewSqlFile(sqlContent: { queryText: string; queryTitle: string }) {
+  const { queryText, queryTitle } = sqlContent;
+  const newFileId = file
+    .create({
+      fileType: file.Type.PLAINTEXT,
+      name: queryTitle,
+      contents: queryText,
+      folder: Number(sqlFileFolder()),
+      description: queryTitle,
+    })
+    .save();
+  return newFileId;
+}
+
+function generateUUID(): string {
+  let d = new Date().getTime();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    let r = Math.random() * 16;
+    // eslint-disable-next-line no-bitwise
+    r = (d + r) % 16 | 0;
+    d = Math.floor(d / 16);
+    // eslint-disable-next-line no-bitwise
+    return (c == 'x' ? r : (r & 0x7) | 0x8).toString(16);
+  });
+}
 
 export { onRequest };
