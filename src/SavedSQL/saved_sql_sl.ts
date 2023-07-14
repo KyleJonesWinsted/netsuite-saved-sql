@@ -295,7 +295,7 @@ const getColumnTypes = (queryResults: any[]): IColumnTypes => {
   const columnTypes: IColumnTypes = {};
   const columnKeys = Object.keys(queryResults[0]);
   for (const key of columnKeys) {
-    const nonNullValues = queryResults.filter((res) => res[key]);
+    const nonNullValues = queryResults.filter((res) => res[key] !== undefined && res[key] !== null);
     columnTypes[key] = nonNullValues.length > 0 && typeof nonNullValues[0][key] === 'number' ? ui.FieldType.FLOAT : ui.FieldType.TEXT;
   }
   return columnTypes;
