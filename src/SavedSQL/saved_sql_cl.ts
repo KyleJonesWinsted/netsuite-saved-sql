@@ -70,14 +70,14 @@ const addScrollListener = () => {
 };
 
 const printPdf = (): void => {
-  const currentUrl = new URL(window.location.href);
+  const searchParams = new URLSearchParams(window.location.href);
   const templateId = <string>currentRecord.get().getValue({ fieldId: IDs.pdfTemplate });
   const params: IRequestParams = {
     pdfTemplate: templateId,
   };
-  for (const [key, value] of Object.entries(currentUrl.searchParams)) {
+  searchParams.forEach((value, key) => {
     params[key] = value;
-  }
+  });
   const pdfUrl = url.resolveScript({
     scriptId: 'customscript_saved_sql_sl',
     deploymentId: 'customdeploy_saved_sql_sl',

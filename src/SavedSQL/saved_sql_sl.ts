@@ -40,7 +40,7 @@ interface IRequestParams {
 }
 
 interface IQueryResults {
-  results: Record<string, any>[];
+  results: Record<string, unknown>[];
   filters: IParsedFilter[];
   templateId?: string;
 }
@@ -86,6 +86,7 @@ const handleGet = (ctx: EntryPoints.Suitelet.onRequestContext): void => {
     const queryResults = getQueryResults(parameters, sqlContent.queryText);
     if (parameters.pdfTemplate) {
       generatePdf(ctx, queryResults, parameters);
+      return;
     } else {
       const form = createResultsPage(parameters, queryResults, sqlContent.queryTitle);
       ctx.response.writePage(form);
@@ -128,6 +129,7 @@ const generatePdf = (ctx: EntryPoints.Suitelet.onRequestContext, queryResults: I
     data: queryResults,
     format: render.DataSource.OBJECT,
   });
+  log.debug('filters', params);
   outputPdf.addCustomDataSource({
     alias: 'filters',
     data: params,
@@ -139,6 +141,7 @@ const generatePdf = (ctx: EntryPoints.Suitelet.onRequestContext, queryResults: I
     value: 'application/pdf',
   });
   ctx.response.writeFile({ file: outputPdf.renderAsPdf(), isInline: true });
+  return;
 };
 
 const replaceNullResults = (queryResults: IQueryResults): void => {
@@ -238,7 +241,7 @@ const getQueryResults = (parameters: IRequestParams, fileContents: string): IQue
   const sqlQuery = replaceFileVariables(fileText, parameters);
 
   // Run Query
-  const results: any[] = [];
+  const results: Record<string, unknown>[] = [];
 
   if (parameters.runPaged) {
     query
@@ -495,8 +498,9 @@ const getParameters = (ctx: EntryPoints.Suitelet.onRequestContext): IRequestPara
   if (defaultParams) {
     parameters = JSON.parse(defaultParams);
   }
-  const urlParameters = ctx.request.parameters;
-  const urlSearch: string | undefined = urlParameters.entryformquerystring;
+  const urlParameters: Record<string, unknown> = ctx.request.parameters;
+  const urlSearch = urlParameters.entryformquerystring as string | undefined;
+  log.debug('urlsearch', { urlSearch, urlParameters });
   if (urlSearch) {
     urlSearch
       .split('&')
@@ -509,7 +513,15 @@ const getParameters = (ctx: EntryPoints.Suitelet.onRequestContext): IRequestPara
   urlParameters.deploy = undefined;
   urlParameters.whence = undefined;
   urlParameters.compid = undefined;
-  parameters = { ...urlParameters, ...parameters };
+  for (const [key, value] of Object.entries(urlParameters)) {
+    log.debug('value', { key, value });
+    const newKey = key //
+      .replace(/:/g, '')
+      .replace(/\//g, '')
+      .replace(/\?/g, '');
+    parameters[newKey] = value as any;
+  }
+  // parameters = { ...urlParameters, ...parameters };
   return parameters;
 };
 
