@@ -123,6 +123,7 @@ const generatePdf = (ctx: EntryPoints.Suitelet.onRequestContext, queryResults: I
   log.debug('pdf query', queryResults);
   const outputPdf = render.create();
   replaceNullResults(queryResults);
+  escapeXmlResults(queryResults);
   outputPdf.setTemplateByScriptId({ scriptId: queryResults.templateId.toUpperCase() });
   outputPdf.addCustomDataSource({
     alias: 'data',
@@ -143,6 +144,21 @@ const generatePdf = (ctx: EntryPoints.Suitelet.onRequestContext, queryResults: I
   ctx.response.writeFile({ file: outputPdf.renderAsPdf(), isInline: true });
   return;
 };
+
+function escapeXmlResults(queryResults: IQueryResults): void {
+  queryResults.results.forEach((res) => {
+    Object.keys(res).forEach((key) => {
+      const value = res[key];
+      if (typeof value === 'string') {
+        res[key] = encodeXml(value);
+      }
+    });
+  });
+}
+
+function encodeXml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
 
 const replaceNullResults = (queryResults: IQueryResults): void => {
   queryResults.results.forEach((res) => {
